@@ -21,4 +21,4 @@ jobs:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
-          extra_args: --no-regex --no-entropy --json
+          extra_args: --results=verified,unknown

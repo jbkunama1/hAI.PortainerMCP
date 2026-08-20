@@ -1,103 +1,219 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>hAI.PortainerMCP – Alias Manager</title>
-  <style>
-    :root {
-      --bg: #0a0e16;
-      --card: #121a22;
-      --accent: #38bdf8;
-      --muted: #6b7280;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>hAI.PortainerMCP — mehrere Portainer-Instanzen per MCP + Alias verwalten</title>
+<meta name="description" content="MCP-Server, der 10–20 Portainer-Instanzen über Aliase administriert. Admin-Webseite, Docker-Image auf GHCR, TruffleHog-Scan.">
+<style>
+  :root{
+    --bg:#0a0e16; --bg2:#0f1522; --card:#121a2b; --line:#1e2a3f;
+    --txt:#e6edf7; --muted:#93a3bf; --accent:#38bdf8; --accent2:#8b5cf6;
+    --ok:#34d399; --warn:#fbbf24;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f7fc; --bg2:#e9eef7; --card:#ffffff; --line:#d8e0ee;
+      --txt:#101828; --muted:#51607a; --accent:#0284c7; --accent2:#7c3aed;
+      --ok:#059669; --warn:#b45309;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: system-ui, sans-serif;
-      background: var(--bg);
-      color: #e0e2e9;
-      line-height: 1.6;
-    }
-    header {
-      text-align: center;
-      padding: 32px 20px;
-    }
-    h1 { font-size: 2rem; margin-bottom: 8px; }
-    .tagline { color: var(--muted); font-size: 0.95rem; opacity: 0.7; }
-    .cta {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 32px;
-    }
-    .btn {
-      padding: 10px 24px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.15s;
-    }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-ghost { background: transparent; color: var(--muted); }
-    .btn:hover { transform: translateY(-1px); }
-    .pills {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 10px;
-      margin-top: 24px;
-    }
-    .pill {
-      padding: 8px 16px;
-      border-radius: 20px;
-      background: var(--card);
-      color: var(--muted);
-      font-size: 0.85rem;
-      text-align: center;
-    }
-    .pill.ok { background: #22c55e; }
-    .pill.accent { background: #6366f1; }
-    .pill.warn { background: #f59e0b; }
-  </style>
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(139,92,246,.14),transparent 60%),
+               radial-gradient(900px 500px at 0% 100%,rgba(56,189,248,.10),transparent 55%),
+               var(--bg);
+    color:var(--txt); line-height:1.6;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header{padding:72px 0 40px}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    padding:6px 12px;border-radius:999px;margin-bottom:20px;
+  }
+  h1{font-size:clamp(2.2rem,5vw,3.6rem);line-height:1.1;letter-spacing:-.02em;font-weight:800}
+  h1 .grad{background:linear-gradient(92deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{max-width:640px;margin-top:18px;font-size:1.15rem;color:var(--muted)}
+  .cta{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;font-weight:600;font-size:.95rem;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+  .btn-primary{background:linear-gradient(92deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 8px 24px -8px rgba(99,102,241,.6)}
+  .btn-ghost{border:1px solid var(--line);color:var(--txt)}
+  .btn:hover{transform:translateY(-2px)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  section{padding:36px 0}
+  h2{font-size:1.5rem;margin-bottom:6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin-bottom:22px;max-width:720px}
+  .pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:.87rem;font-weight:500;color:var(--txt);background:var(--card);border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot.ok{background:var(--ok)} .dot.accent{background:var(--accent)} .dot.warn{background:var(--warn)}
+  .diagram{margin:26px 0 8px;padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);font-size:.9rem}
+  .diagram .layer{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .diagram .node{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);font-weight:600;white-space:nowrap}
+  .diagram .node.core{background:color-mix(in srgb,var(--accent2) 14%,var(--bg2))}
+  .diagram .node.admin{border-style:dashed}
+  .diagram .arrow{color:var(--muted);text-align:center;padding:4px 0;font-size:.8rem}
+  .diagram .arrow::before{content:"\2193";display:block;font-size:1.2rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .card h3{display:flex;align-items:center;gap:10px;font-size:1.05rem;margin-bottom:10px}
+  .card p{color:var(--muted);font-size:.94rem}
+  .card code{display:inline-block;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:.85em}
+  table{width:100%;border-collapse:collapse;margin-top:22px;font-size:.9rem}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em}
+  td var{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-style:normal;color:var(--accent)}
+  footer{padding:44px 0 56px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);margin-top:48px}
+  footer a{color:var(--accent)}
+  @media (max-width:640px){header{padding:48px 0 28px}.diagram .arrow{display:none}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>hAI.PortainerMCP</h1>
-    <p class="tagline">Auth-layered MCP SSH gateway – Alias‑basierte Verwaltung von Portainer-Instanzen</p>
+
+<header>
+  <div class="wrap">
+    <div class="badge"><span class="dot ok"></span> Docker ready &middot; GHCR published</div>
+    <h1>hAI.<span class="grad">PortainerMCP</span></h1>
+    <p class="tagline">
+      Ein MCP-Server, der <strong>10&ndash;20 Portainer-Instanzen</strong> über Aliase administriert:
+      REST-API + API-Key pro Instanz, ein freundlicher Alias &ndash; nutzbar von Agents über AnythingMCP oder kompatible MCP-Clients.
+    </p>
     <div class="cta">
-      <a class="btn btn-primary" href="https://github.com/jbkunama1/hAI.PortainerMCP">Deploy on GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/jbkunama1/hAI.PortainerMCP">View on GitHub</a>
+      <a class="btn btn-ghost" href="https://github.com/jbkunama1/hAI.PortainerMCP/pkgs/container/hai.portainermcp">GHCR image</a>
       <a class="btn btn-ghost" href="#deploy">Deploy with Portainer</a>
     </div>
-  </header>
+    <div class="pills">
+      <span class="pill"><span class="dot accent"></span> Python MCP-Server</span>
+      <span class="pill"><span class="dot accent"></span> Alias-Verwaltung (bis 20)</span>
+      <span class="pill"><span class="dot warn"></span> Admin-Webseite :8026</span>
+      <span class="pill"><span class="dot ok"></span> TruffleHog-Scan</span>
+      <span class="pill"><span class="dot ok"></span> MIT license</span>
+    </div>
+  </div>
+</header>
 
-  <main>
-    <section class="how">
-      <h2>Wie es funktioniert</h2>
-      <p>Der MCP‑Server empfängt Anfragen über <code>http://localhost:8822/mcp</code> und leitet sie an den internen <code>sshmcp-core</code> weiter. Alle Alias‑Konfigurationen werden in <code>data/ssh_aliases.json</code> gespeichert.</p>
-    </section>
+<main class="wrap">
 
-    <section class="features">
-      <h2>Funktionen</h2>
-      <ul>
-        <li>🔒 API‑Schlüssel Authentifizierung (keine Passwörter im Code)</li>
-        <li>📦 SSH‑Alias‑Registry (bis 20 Einträge)</li>
-        <li>🖥️ Admin‑UI & CLI über <code>http://localhost:8825</code></li>
-        <li>🐳 Docker‑Komposition mit <code>highfishNetwork</code></li>
-      </ul>
-    </section>
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="sub">Ein MCP-Server, viele Portainer-Instanzen &ndash; angesprochen per Alias.</p>
+    <div class="diagram mono">
+      <div class="layer"><span class="node">MCP client / AnythingMCP / Agenten</span></div>
+      <div class="arrow">streamable HTTP &rarr; :8025/mcp</div>
+      <div class="layer"><span class="node core">portainer-mcp &nbsp;:8025</span></div>
+      <div class="arrow">Portainer REST API v2 + X-API-Key</div>
+      <div class="layer"><span class="node">Portainer-1 &middot; Portainer-2 &middot; &hellip; &middot; Portainer-20</span></div>
+    </div>
+    <div class="diagram mono">
+      <div class="layer"><span class="node admin">Admin-Webseite &nbsp;:8026</span></div>
+      <div class="arrow">CRUD &rarr; data/portainer_aliases.json (homelab, prod, &hellip;)</div>
+    </div>
+  </section>
 
-    <section class="pills">
-      <div class="pill"><span class="dot accent">Node.js</span> – Leichtgewichtig</div>
-      <div class="pill"><span class="dot ok">Docker</span> – Container‑Ready</div>
-      <div class="pill"><span class="dot warning">Portainer</span> – Direkter Zugriff</div>
-    </section>
+  <section id="features">
+    <h2>Features</h2>
+    <p class="sub">Alles, was die README verspricht, auf den Punkt.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>&#127968; Alias-Verwaltung</h3>
+        <p>Verwalte bis zu 20 Portainer-Instanzen unter einem Alias (<code>homelab</code>, <code>prod</code>, &hellip;). API-Key pro Instanz, gespeichert in <code>data/portainer_aliases.json</code>.</p>
+      </div>
+      <div class="card">
+        <h3>&#129504; MCP-Tools für Agents</h3>
+        <p><code>portainer_alias_list/add/update/remove</code>, <code>portainer_status</code>, <code>portainer_endpoints</code>, <code>portainer_containers_list</code>, <code>portainer_stacks_list</code>.</p>
+      </div>
+      <div class="card">
+        <h3>&#128736;&#65039; Admin-Webseite</h3>
+        <p>Passwortgeschützte Seite auf <code>8026</code>: Aliase anlegen, bearbeiten, löschen &ndash; ohne Datei-Editor. Login via HttpOnly-Cookie.</p>
+      </div>
+      <div class="card">
+        <h3>&#128640; Docker + Portainer</h3>
+        <p>Published als <code class="mono">ghcr.io/jbkunama1/hai.portainermcp:latest</code>, deploybar als Stack &ndash; mit Volume für die Alias-Datei.</p>
+      </div>
+      <div class="card">
+        <h3>&#128200; streamable HTTP</h3>
+        <p>AnythingMCP zeigt auf <code class="mono">http://&lt;host&gt;:8025/mcp</code>. Kein stdio, kein Build im Agent-Kontext.</p>
+      </div>
+      <div class="card">
+        <h3>&#128272; TruffleHog-Scan</h3>
+        <p>GitHub-Actions-Workflow prüft bei jedem Push/PR auf versehentlich eingecheckte Secrets.</p>
+      </div>
+    </div>
+  </section>
 
-    <section id="deploy">
-      <h2>Deployment</h2>
-      <p>Kloniere das Repository und starte mit:</p>
-      <pre><code>docker-compose up -d</code></pre>
-      <p>Für Portainer: <a href="https://github.com/jbkunama1/hAI.PortainerMCP">Stack erstellen</a> unter <code>Settings → Stacks → Add stack</code>.</p>
-    </section>
-  </main>
+  <section id="deploy">
+    <h2>Deploy</h2>
+    <p class="sub">In Portainer: <strong>Stacks &rarr; Add stack &rarr; Repository</strong>, URL, Compose-Pfad <code class="mono">docker-compose.yml</code>, Branch <code class="mono">main</code>.</p>
+<pre><code><span style="color:var(--muted)"># docker network create highfishNetwork</span>
+services:
+  portainer-mcp:
+    image: ghcr.io/jbkunama1/hai.portainermcp:latest
+    container_name: portainer-mcp
+    restart: unless-stopped
+    networks: [highfishNetwork]
+    ports:
+      - "8025:8025"   <span style="color:var(--muted)"># MCP (streamable HTTP)</span>
+      - "8026:8026"   <span style="color:var(--muted)"># Admin-Webseite</span>
+    volumes:
+      - ./data:/usr/src/app/data
+    environment:
+      PORTAINER_ADMIN_PASSWORD: "CHANGE_ME_ADMIN"
+
+networks:
+  highfishNetwork:
+    external: true
+</code></pre>
+  </section>
+
+  <section id="env">
+    <h2>Environment variables</h2>
+    <p class="sub">Die volle Tabelle steht in der README. Die Basics:</p>
+    <table>
+      <thead><tr><th>Variable</th><th>Required</th><th>Default</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><var>PORTAINER_MCP_PORT</var></td><td>no</td><td>8025</td><td>MCP-Endpoint (streamable HTTP).</td></tr>
+        <tr><td><var>PORTAINER_ADMIN_PORT</var></td><td>no</td><td>8026</td><td>Admin-Webseite Port.</td></tr>
+        <tr><td><var>PORTAINER_ADMIN_PASSWORD</var></td><td>yes (empfohlen)</td><td>(leer)</td><td>Passwort der Admin-Seite. Leer = deaktiviert.</td></tr>
+        <tr><td><var>PORTAINER_ALIASES_FILE</var></td><td>no</td><td>data/portainer_aliases.json</td><td>JSON-Datei mit Aliasen inkl. API-Keys.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="tools">
+    <h2>MCP-Tools</h2>
+    <table>
+      <thead><tr><th>Tool</th><th>Beschreibung</th></tr></thead>
+      <tbody>
+        <tr><td><var>portainer_alias_list</var></td><td>Alle Aliase (Name, URL, hat Key) &ndash; ohne API-Keys</td></tr>
+        <tr><td><var>portainer_alias_get</var></td><td>Ein Alias inkl. API-Key</td></tr>
+        <tr><td><var>portainer_alias_add</var></td><td>Neuen Alias anlegen</td></tr>
+        <tr><td><var>portainer_alias_update</var></td><td>Alias ändern (URL/API-Key)</td></tr>
+        <tr><td><var>portainer_alias_remove</var></td><td>Alias löschen</td></tr>
+        <tr><td><var>portainer_status</var></td><td>Erreichbarkeit + Version einer Instanz</td></tr>
+        <tr><td><var>portainer_endpoints</var></td><td>Environments/Endpoints auflisten</td></tr>
+        <tr><td><var>portainer_containers_list</var></td><td>Container eines Endpoints auflisten</td></tr>
+        <tr><td><var>portainer_stacks_list</var></td><td>Stacks auflisten</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="https://github.com/jbkunama1/hAI.PortainerMCP">hAI.PortainerMCP</a> &middot;
+    <a href="https://github.com/jbkunama1/hAI.PortainerMCP/blob/main/README.md">README</a> &middot;
+    <a href="https://github.com/jbkunama1/hAI.PortainerMCP/blob/main/LICENSE">MIT License</a> &middot;
+    Nur in vertrautem Netzwerk oder hinter VPN/HTTPS betreiben. &#9749;
+  </div>
+</footer>
+
 </body>
 </html>

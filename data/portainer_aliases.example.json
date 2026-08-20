@@ -1,0 +1,10 @@
+{
+  "homelab": {
+    "url": "https://portainer.example.com",
+    "api_key": "ptr_XXXXXXXXXXXXXXXX"
+  },
+  "prod": {
+    "url": "http://10.0.0.20:9000",
+    "api_key": "ptr_XXXXXXXXXXXXXXXX"
+  }
+}

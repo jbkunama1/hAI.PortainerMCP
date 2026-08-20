@@ -1,0 +1,11 @@
+# Secrets / API-Keys niemals committen
+.env
+*.env
+data/portainer_aliases.json
+data/*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
