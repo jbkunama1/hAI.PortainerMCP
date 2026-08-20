@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  # TCP port for authenticating requests to this service
+  ssh-smcp-auth:
+    image: ghcr.io/jbkunama1/hai.sshmcpauth:latest
+    container_name: ssh-smcp-auth
+    restart: unless-stopped
+    networks:
+      - highfishNetwork
+    ports:
+      - "8822:8822"   # Port 8822 externally:8822 internally
+      - "127.0.0.1:8825:8825"   # Port 8825 (admin UI) only internally
+    environment:
+      - SSHMCP_API_KEY=$SSHMCP_API_KEY
+      - SSHMCP_TARGET_HOST=$SSHMCP_TARGET_HOST
+      - SSHMCP_TARGET_PORT=$SSHMCP_TARGET_PORT
+      - SSHMCP_LISTEN_PORT=$SSHMCP_LISTEN_PORT
+      - SSHMCP_ALIASES_FILE=/data/ssh_aliases.json
+      - SSHMCP_ADMIN_PORT=$SSHMCP_ADMIN_PORT
+      - SSHMCP_ADMIN_PASSWORD=$SSHMCP_ADMIN_PASSWORD
+
+  # Service on the classical SSH port reached by agents
+  ssh-smcp-core:
+    image: mingyang91/ssh-mcp:latest
+    container_name: ssh-smcp-core
+    restart: unless-stopped
+    networks:
+      - highfishNetwork
+    expose:
+      - "8000"   # internal port for agents to reach "core"
+    environment:
+      - RUST_LOG=info
+      - MCP_PORT=8000
+      - SSH_PAGE=/  # page root
+      # optional, for prepacking users
+      # MONGO_URL=mongodb://MongoDB:27017/mongo
+
+  # Storage volume
+  storage:
+    image: alpine:latest
+    container_name: storage
+    networks:
+      - highfishNetwork
+    volumes:
+      - "${PWD}/data:/data"
+    command: sh -c 'echo "default json storage" > /data/ssh_aliases.json'
+
+networks:
+  highfishNetwork:
+    external: true

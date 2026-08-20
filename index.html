@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hAI.PortainerMCP – Alias Manager</title>
+  <style>
+    :root {
+      --bg: #0a0e16;
+      --card: #121a22;
+      --accent: #38bdf8;
+      --muted: #6b7280;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: #e0e2e9;
+      line-height: 1.6;
+    }
+    header {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    h1 { font-size: 2rem; margin-bottom: 8px; }
+    .tagline { color: var(--muted); font-size: 0.95rem; opacity: 0.7; }
+    .cta {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-ghost { background: transparent; color: var(--muted); }
+    .btn:hover { transform: translateY(-1px); }
+    .pills {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .pill {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .pill.ok { background: #22c55e; }
+    .pill.accent { background: #6366f1; }
+    .pill.warn { background: #f59e0b; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>hAI.PortainerMCP</h1>
+    <p class="tagline">Auth-layered MCP SSH gateway – Alias‑basierte Verwaltung von Portainer-Instanzen</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/jbkunama1/hAI.PortainerMCP">Deploy on GitHub</a>
+      <a class="btn btn-ghost" href="#deploy">Deploy with Portainer</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="how">
+      <h2>Wie es funktioniert</h2>
+      <p>Der MCP‑Server empfängt Anfragen über <code>http://localhost:8822/mcp</code> und leitet sie an den internen <code>sshmcp-core</code> weiter. Alle Alias‑Konfigurationen werden in <code>data/ssh_aliases.json</code> gespeichert.</p>
+    </section>
+
+    <section class="features">
+      <h2>Funktionen</h2>
+      <ul>
+        <li>🔒 API‑Schlüssel Authentifizierung (keine Passwörter im Code)</li>
+        <li>📦 SSH‑Alias‑Registry (bis 20 Einträge)</li>
+        <li>🖥️ Admin‑UI & CLI über <code>http://localhost:8825</code></li>
+        <li>🐳 Docker‑Komposition mit <code>highfishNetwork</code></li>
+      </ul>
+    </section>
+
+    <section class="pills">
+      <div class="pill"><span class="dot accent">Node.js</span> – Leichtgewichtig</div>
+      <div class="pill"><span class="dot ok">Docker</span> – Container‑Ready</div>
+      <div class="pill"><span class="dot warning">Portainer</span> – Direkter Zugriff</div>
+    </section>
+
+    <section id="deploy">
+      <h2>Deployment</h2>
+      <p>Kloniere das Repository und starte mit:</p>
+      <pre><code>docker-compose up -d</code></pre>
+      <p>Für Portainer: <a href="https://github.com/jbkunama1/hAI.PortainerMCP">Stack erstellen</a> unter <code>Settings → Stacks → Add stack</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
