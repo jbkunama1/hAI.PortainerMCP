@@ -40,9 +40,9 @@ mcp = FastMCP(
         "Administer multiple Portainer instances via aliases. "
         "Aliases are managed with portainer_alias_* tools; actual Portainer data "
         "comes from portainer_status, portainer_endpoints, portainer_containers_list, "
-        "portainer_stacks_list, portainer_docker_images, portainer_networks, "
-        "portainer_volumes, portainer_system_info, portainer_deploy_stack, "
-        "portainer_undeploy_stack, portainer_execute_sql."
+        "portainer_stacks_list, portainer_pull_image, portainer_docker_images, "
+        "portainer_networks, portainer_volumes, portainer_system_info, "
+        "portainer_deploy_stack, portainer_undeploy_stack, portainer_execute_sql."
     ),
 )
 
@@ -351,6 +351,28 @@ def portainer_deploy_stack(alias: str, stack_name: str, stack_file: str, endpoin
     if status >= 400:
         return {"alias": alias, "ok": False, "status": status, "error": body}
     return {"alias": alias, "ok": True, "result": body}
+
+
+@mcp.tool()
+def portainer_pull_image(alias: str, image: str) -> dict:
+    """Pull a Docker image for a Portainer instance. Uses POST /api/endpoints/{id}/docker/images/create."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, endpoints = _api(a["url"], a["api_key"], "/api/endpoints")
+    if not isinstance(endpoints, list):
+        return {"alias": alias, "status": status, "error": endpoints}
+    if not endpoints:
+        return {"alias": alias, "error": "no endpoints found"}
+    ep = endpoints[0]
+    status, body = _api(
+        a["url"], a["api_key"],
+        f"/api/endpoints/{ep.get('Id')}/docker/images/create?fromImage={image}",
+        "POST"
+    )
+    if status >= 400:
+        return {"alias": alias, "status": status, "error": body}
+    return {"alias": alias, "status": status, "image": image, "message": "Pull initiated"}
 
 
 @mcp.tool()
