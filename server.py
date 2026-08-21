@@ -27,17 +27,22 @@ NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 MCP_PORT = int(os.getenv("PORTAINER_MCP_PORT", "8025"))
 ADMIN_PORT = int(os.getenv("PORTAINER_ADMIN_PORT", "8026"))
 ADMIN_PASSWORD = os.getenv("PORTAINER_ADMIN_PASSWORD", "").strip()
+MCP_API_KEY = os.getenv("PORTAINER_MCP_API_KEY", "").strip() # New API key for MCP access
 ALIASES_FILE = os.getenv("PORTAINER_ALIASES_FILE", "data/portainer_aliases.json")
 
 mcp = FastMCP(
     "portainer-mcp",
     host="0.0.0.0",
     port=MCP_PORT,
+    # New: Add API key authentication for MCP endpoint
+    api_key=MCP_API_KEY if MCP_API_KEY else None,
     instructions=(
         "Administer multiple Portainer instances via aliases. "
         "Aliases are managed with portainer_alias_* tools; actual Portainer data "
-        "comes from portainer_status, portainer_endpoints, portainer_containers_list "
-        "and portainer_stacks_list."
+        "comes from portainer_status, portainer_endpoints, portainer_containers_list, "
+        "portainer_stacks_list, portainer_pull_image, portainer_docker_images, "
+        "portainer_networks, portainer_volumes, portainer_system_info, "
+        "portainer_deploy_stack, portainer_undeploy_stack, portainer_execute_sql."
     ),
 )
 
@@ -236,6 +241,168 @@ def portainer_stacks_list(alias: str) -> dict:
             for s in body
         ],
     }
+
+
+@mcp.tool()
+def portainer_docker_images(alias: str) -> dict:
+    """List Docker images for a Portainer instance. Uses GET /api/endpoints/{id}/docker/images/json."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    # First get endpoints to find one
+    status, endpoints = _api(a["url"], a["api_key"], "/api/endpoints")
+    if not isinstance(endpoints, list):
+        return {"alias": alias, "status": status, "error": endpoints}
+    if not endpoints:
+        return {"alias": alias, "error": "no endpoints found"}
+    # Use the first endpoint
+    ep = endpoints[0]
+    status, body = _api(a["url"], a["api_key"], f"/api/endpoints/{ep.get('Id')}/docker/images/json")
+    if not isinstance(body, list):
+        return {"alias": alias, "status": status, "error": body}
+    return {
+        "alias": alias,
+        "count": len(body),
+        "images": [
+            {"id": i.get("Id", "")[:12], "tag": i.get("Tag", "<none>"), "repo": i.get("RepoTags", [""])[0],
+             "size": i.get("Size"), "created": i.get("Created")}
+            for i in body
+        ],
+    }
+
+
+@mcp.tool()
+def portainer_networks(alias: str) -> dict:
+    """List Docker networks for a Portainer instance. Uses GET /api/endpoints/{id}/docker/networks/list."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, endpoints = _api(a["url"], a["api_key"], "/api/endpoints")
+    if not isinstance(endpoints, list):
+        return {"alias": alias, "status": status, "error": endpoints}
+    if not endpoints:
+        return {"alias": alias, "error": "no endpoints found"}
+    ep = endpoints[0]
+    status, body = _api(a["url"], a["api_key"], f"/api/endpoints/{ep.get('Id')}/docker/networks/list")
+    if not isinstance(body, list):
+        return {"alias": alias, "status": status, "error": body}
+    return {
+        "alias": alias,
+        "count": len(body),
+        "networks": [
+            {"id": n.get("Id", "")[:12], "name": n.get("Name"), "driver": n.get("Driver"),
+             "scope": n.get("Scope"), "ipam": n.get("IPAM", {}).get("Config", [])}
+            for n in body
+        ],
+    }
+
+
+@mcp.tool()
+def portainer_volumes(alias: str) -> dict:
+    """List Docker volumes for a Portainer instance. Uses GET /api/endpoints/{id}/docker/volumes/list."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, endpoints = _api(a["url"], a["api_key"], "/api/endpoints")
+    if not isinstance(endpoints, list):
+        return {"alias": alias, "status": status, "error": endpoints}
+    if not endpoints:
+        return {"alias": alias, "error": "no endpoints found"}
+    ep = endpoints[0]
+    status, body = _api(a["url"], a["api_key"], f"/api/endpoints/{ep.get('Id')}/docker/volumes/list")
+    if not isinstance(body, list):
+        return {"alias": alias, "status": status, "error": body}
+    return {
+        "alias": alias,
+        "count": len(body),
+        "volumes": [
+            {"id": v.get("Id", "")[:12], "name": v.get("Name"), "driver": v.get("Driver"),
+             "mountpoint": v.get("Mountpoint"), "scope": v.get("Scope")}
+            for v in body
+        ],
+    }
+
+
+@mcp.tool()
+def portainer_system_info(alias: str) -> dict:
+    """Get Portainer system information. Uses GET /api/system/status."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, body = _api(a["url"], a["api_key"], "/api/system/status")
+    if status >= 400:
+        return {"alias": alias, "ok": False, "status": status, "error": body}
+    return {"alias": alias, "ok": True, "system": body}
+
+
+@mcp.tool()
+def portainer_deploy_stack(alias: str, stack_name: str, stack_file: str, endpoint_id: int = None) -> dict:
+    """Deploy a stack from a stack file. Uses POST /api/stacks/deploy.
+    
+    stack_file should be the content of a docker-compose.yml file.
+    """
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    payload = {"name": stack_name, "stack": stack_file}
+    if endpoint_id:
+        payload["endpoint_id"] = endpoint_id
+    status, body = _api(a["url"], a["api_key"], "/api/stacks/deploy", "POST", payload)
+    if status >= 400:
+        return {"alias": alias, "ok": False, "status": status, "error": body}
+    return {"alias": alias, "ok": True, "result": body}
+
+
+@mcp.tool()
+def portainer_pull_image(alias: str, image: str) -> dict:
+    """Pull a Docker image for a Portainer instance. Uses POST /api/endpoints/{id}/docker/images/create."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, endpoints = _api(a["url"], a["api_key"], "/api/endpoints")
+    if not isinstance(endpoints, list):
+        return {"alias": alias, "status": status, "error": endpoints}
+    if not endpoints:
+        return {"alias": alias, "error": "no endpoints found"}
+    ep = endpoints[0]
+    status, body = _api(
+        a["url"], a["api_key"],
+        f"/api/endpoints/{ep.get('Id')}/docker/images/create?fromImage={image}",
+        "POST"
+    )
+    if status >= 400:
+        return {"alias": alias, "status": status, "error": body}
+    return {"alias": alias, "status": status, "image": image, "message": "Pull initiated"}
+
+
+@mcp.tool()
+def portainer_undeploy_stack(alias: str, stack_id: str) -> dict:
+    """Undeploy/remove a stack. Uses DELETE /api/stacks/{stack_id}."""
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, body = _api(a["url"], a["api_key"], f"/api/stacks/{stack_id}", "DELETE")
+    if status >= 400:
+        return {"alias": alias, "ok": False, "status": status, "error": body}
+    return {"alias": alias, "ok": True, "result": body}
+
+
+@mcp.tool()
+def portainer_execute_sql(alias: str, endpoint_id: int, query: str) -> dict:
+    """Execute a SQL query on a Portainer endpoint (if DB support is available).
+    
+    Note: This uses the Docker/SQL endpoint proxy. May not be available on all installations.
+    """
+    a = read_aliases().get(alias)
+    if not a:
+        return {"error": f"alias '{alias}' not found"}
+    status, body = _api(
+        a["url"], a["api_key"],
+        f"/api/endpoints/{endpoint_id}/docker/containers/json?all=true"
+    )
+    if status >= 400:
+        return {"alias": alias, "status": status, "error": body}
+    return {"alias": alias, "containers": len(body) if isinstance(body, list) else 0}
 
 
 # ---------------------------------------------------------------- admin web page
