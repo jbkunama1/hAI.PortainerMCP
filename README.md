@@ -45,6 +45,14 @@ Portainer-1  Portainer-2  ...  Portainer-20   (ADMIN über Alias "homelab", "pro
 | `portainer_endpoints` | Environments/Endpoints auflisten |
 | `portainer_containers_list` | Container eines Endpoints auflisten |
 | `portainer_stacks_list` | Stacks auflisten |
+| `portainer_docker_images` | Docker-Images auflisten |
+| `portainer_networks` | Docker-Netzwerke auflisten |
+| `portainer_volumes` | Docker-Volumes auflisten |
+| `portainer_system_info` | System-Informationen abfragen |
+| `portainer_pull_image` | Docker-Image per Name pullen (`POST /images/create`) |
+| `portainer_deploy_stack` | Stack deployen |
+| `portainer_undeploy_stack` | Stack löschen |
+| `portainer_execute_sql` | SQL auf einer Instanz ausführen |
 
 Alle Treffer laufen über die Portainer-REST-API v2 mit `X-API-Key`-Header.
 
@@ -62,6 +70,7 @@ Alle Treffer laufen über die Portainer-REST-API v2 mit `X-API-Key`-Header.
 | `PORTAINER_MCP_PORT` | `8025` | MCP (streamable HTTP) |
 | `PORTAINER_ADMIN_PORT` | `8026` | Admin-Webseite |
 | `PORTAINER_ADMIN_PASSWORD` | `CHANGE_ME_ADMIN` | Passwort der Admin-Webseite (leer = deaktiviert) |
+| `PORTAINER_MCP_API_KEY` | *(leer)* | **Bearer-Token für MCP-Endpoint** (leer = keine Auth) |
 | `PORTAINER_ALIASES_FILE` | `/usr/src/app/data/portainer_aliases.json` | JSON mit Aliasen |
 
 5. Docker-Netzwerk (falls nicht vorhanden): `docker network create highfishNetwork`.
@@ -81,6 +90,7 @@ Die API-Keys pro Alias liegen in `data/portainer_aliases.json` (Volume-Mount `./
 ```bash
 pip install "mcp>=1.9"
 export PORTAINER_ADMIN_PASSWORD=meinpass   # Windows: $env:PORTAINER_ADMIN_PASSWORD="meinpass"
+export PORTAINER_MCP_API_KEY=mysecretkey   # optional: Bearer-Token für MCP-Endpoint
 python server.py
 ```
 
@@ -96,9 +106,11 @@ MCP-Client/AnythingMCP-Konfiguration:
       "name": "Portainer MCP",
       "type": "streamable",
       "url": "http://localhost:8025/mcp",
-      "enabled": true
+      "enabled": true,
+      "bearer_token": "YOUR_API_KEY_HERE"
     }
   }
+}
 }
 ```
 
@@ -124,6 +136,7 @@ Beispiel `data/portainer_aliases.example.json`:
 
 - Nur in vertrautem Netzwerk oder hinter VPN/HTTPS betreiben.
 - `PORTAINER_ADMIN_PASSWORD` setzen – sonst ist die Admin-Seite deaktiviert.
+- `PORTAINER_MCP_API_KEY` setzen, um den MCP-Endpoint mit Bearer-Auth (`Authorization: Bearer <key>`) zu schützen.
 - Portainer-API-Keys möglichst minimal (RBAC) vergeben.
 - TruffleHog-Workflow prüft automatisch auf versehentlich eingecheckte Secrets.
 
