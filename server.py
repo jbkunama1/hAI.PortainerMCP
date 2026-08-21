@@ -34,8 +34,6 @@ mcp = FastMCP(
     "portainer-mcp",
     host="0.0.0.0",
     port=MCP_PORT,
-    # New: Add API key authentication for MCP endpoint
-    api_key=MCP_API_KEY if MCP_API_KEY else None,
     instructions=(
         "Administer multiple Portainer instances via aliases. "
         "Aliases are managed with portainer_alias_* tools; actual Portainer data "
