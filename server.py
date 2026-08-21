@@ -27,7 +27,8 @@ NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 MCP_PORT = int(os.getenv("PORTAINER_MCP_PORT", "8025"))
 ADMIN_PORT = int(os.getenv("PORTAINER_ADMIN_PORT", "8026"))
 ADMIN_PASSWORD = os.getenv("PORTAINER_ADMIN_PASSWORD", "").strip()
-MCP_API_KEY = os.getenv("PORTAINER_MCP_API_KEY", "").strip() # New API key for MCP access
+MCP_API_KEY = os.getenv("PORTAINER_MCP_API_KEY", "").strip()
+os.environ["FASTMCP_AUTH_TOKEN"] = MCP_API_KEY  # map legacy var to FastMCP expected name
 ALIASES_FILE = os.getenv("PORTAINER_ALIASES_FILE", "data/portainer_aliases.json")
 
 mcp = FastMCP(
@@ -43,7 +44,7 @@ mcp = FastMCP(
         "portainer_deploy_stack, portainer_undeploy_stack, portainer_execute_sql."
         " The MCP endpoint is protected with Bearer token authentication using the PORTAINER_MCP_API_KEY environment variable."
     ),
-    access_token=MCP_API_KEY
+    # authentication token is read from FASTMCP_AUTH_TOKEN env var
 )
 
 
