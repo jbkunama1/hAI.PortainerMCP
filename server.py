@@ -41,7 +41,9 @@ mcp = FastMCP(
         "portainer_stacks_list, portainer_pull_image, portainer_docker_images, "
         "portainer_networks, portainer_volumes, portainer_system_info, "
         "portainer_deploy_stack, portainer_undeploy_stack, portainer_execute_sql."
+        " The MCP endpoint is protected with Bearer token authentication using the PORTAINER_MCP_API_KEY environment variable."
     ),
+    access_token=MCP_API_KEY
 )
 
 
