@@ -44,22 +44,33 @@ mcp = FastMCP(
 
 # ---------------------------------------------------------------- persistence
 
+_ALIASES_CACHE: dict | None = None
+_ALIASES_LOCK = threading.Lock()
+
 def read_aliases() -> dict:
-    try:
-        with open(ALIASES_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data if isinstance(data, dict) else {}
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+    global _ALIASES_CACHE
+    with _ALIASES_LOCK:
+        if _ALIASES_CACHE is not None:
+            return _ALIASES_CACHE
+        try:
+            with open(ALIASES_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            _ALIASES_CACHE = data if isinstance(data, dict) else {}
+        except (FileNotFoundError, json.JSONDecodeError):
+            _ALIASES_CACHE = {}
+        return _ALIASES_CACHE
 
 
 def write_aliases(aliases: dict) -> None:
+    global _ALIASES_CACHE
     os.makedirs(os.path.dirname(ALIASES_FILE) or ".", exist_ok=True)
     tmp = ALIASES_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(aliases, f, indent=2, ensure_ascii=False)
         f.write("\n")
     os.replace(tmp, ALIASES_FILE)
+    with _ALIASES_LOCK:
+        _ALIASES_CACHE = aliases
 
 
 def public_view(aliases: dict) -> list[dict]:
